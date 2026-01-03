@@ -131,6 +131,29 @@
     @apply bg-background text-foreground;
   }
   
+  /* Cursor pointer for interactive elements */
+  button,
+  [role="button"],
+  a,
+  input[type="button"],
+  input[type="submit"],
+  input[type="checkbox"],
+  input[type="radio"],
+  select,
+  label[for],
+  [data-clickable="true"],
+  .cursor-pointer {
+    cursor: pointer;
+  }
+  
+  /* Disabled state */
+  button:disabled,
+  [role="button"][aria-disabled="true"],
+  input:disabled,
+  select:disabled {
+    cursor: not-allowed;
+  }
+  
   /* Spotify-style scrollbar */
   ::-webkit-scrollbar {
     width: 12px;

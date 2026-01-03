@@ -1,6 +1,7 @@
 # Plan directory - not to be committed
 /plan
 progress.md
+/glowfox/
 
 # Dependencies
 **/node_modules/

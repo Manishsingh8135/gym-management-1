@@ -117,10 +117,25 @@ export const membershipsApi = {
 
 // Payments API
 export const paymentsApi = {
-  getAll: (params?: { memberId?: string; status?: string }) =>
+  getAll: (params?: { memberId?: string; status?: string; type?: string; page?: number; limit?: number }) =>
     api.get("/payments", { params }),
-  create: (data: any) => api.post("/payments", data),
   getById: (id: string) => api.get(`/payments/${id}`),
+  create: (data: {
+    memberId: string;
+    membershipId?: string;
+    amount: number;
+    type?: string;
+    paymentMethod?: string;
+    notes?: string;
+    discount?: number;
+    tax?: number;
+  }) => api.post("/payments", data),
+  refund: (id: string, data: { reason?: string; refundAmount?: number }) =>
+    api.post(`/payments/${id}/refund`, data),
+  getStats: (params?: { startDate?: string; endDate?: string }) =>
+    api.get("/payments/stats", { params }),
+  getMemberPayments: (memberId: string) =>
+    api.get(`/payments/member/${memberId}`),
 };
 
 // Classes API
@@ -134,11 +149,20 @@ export const classesApi = {
 
 // Attendance API
 export const attendanceApi = {
-  checkIn: (data: { qrCode: string; branchId: string }) =>
-    api.post("/attendance/scan", { ...data, type: "CHECK_IN" }),
-  checkOut: (data: { qrCode: string; branchId: string }) =>
-    api.post("/attendance/scan", { ...data, type: "CHECK_OUT" }),
-  getToday: () => api.get("/attendance/current"),
+  checkIn: (data: { memberId: string; branchId?: string; method?: string }) =>
+    api.post("/attendance/check-in", data),
+  checkOut: (data: { memberId?: string; attendanceId?: string }) =>
+    api.post("/attendance/check-out", data),
+  checkInByQR: (data: { qrCode: string; branchId?: string }) =>
+    api.post("/attendance/check-in/qr", data),
+  checkInByMemberId: (data: { memberIdCode: string; branchId?: string }) =>
+    api.post("/attendance/check-in/member-id", data),
+  getToday: (branchId?: string) =>
+    api.get("/attendance/today", { params: branchId ? { branchId } : {} }),
+  getHistory: (params?: { memberId?: string; branchId?: string; startDate?: string; endDate?: string; page?: number; limit?: number }) =>
+    api.get("/attendance", { params }),
+  getMemberAttendance: (memberId: string, days?: number) =>
+    api.get(`/attendance/member/${memberId}`, { params: days ? { days } : {} }),
 };
 
 export default api;
