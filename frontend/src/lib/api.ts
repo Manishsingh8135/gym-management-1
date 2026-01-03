@@ -140,11 +140,90 @@ export const paymentsApi = {
 
 // Classes API
 export const classesApi = {
-  getAll: () => api.get("/classes"),
-  getSchedule: (params?: { branchId?: string; startDate?: string; endDate?: string }) =>
-    api.get("/schedules", { params }),
+  getAll: (params?: { includeInactive?: boolean }) => 
+    api.get("/classes", { params }),
+  getById: (id: string) => api.get(`/classes/${id}`),
+  create: (data: {
+    name: string;
+    description?: string;
+    category?: string;
+    durationMinutes?: number;
+    maxCapacity?: number;
+    color?: string;
+    difficulty?: string;
+    dropInPrice?: number;
+  }) => api.post("/classes", data),
+  update: (id: string, data: any) => api.patch(`/classes/${id}`, data),
+  delete: (id: string) => api.delete(`/classes/${id}`),
+  
+  // Schedules
+  getSchedules: (params?: { branchId?: string; classId?: string; dayOfWeek?: number }) =>
+    api.get("/classes/schedules/all", { params }),
+  getWeeklySchedule: (params?: { branchId?: string; weekStart?: string }) =>
+    api.get("/classes/schedules/weekly", { params }),
+  createSchedule: (data: {
+    classId: string;
+    branchId: string;
+    instructorId: string;
+    dayOfWeek: number;
+    startTime: string;
+    endTime: string;
+    room?: string;
+  }) => api.post("/classes/schedules", data),
+  updateSchedule: (id: string, data: any) => api.patch(`/classes/schedules/${id}`, data),
+  deleteSchedule: (id: string) => api.delete(`/classes/schedules/${id}`),
+  
+  // Bookings
+  getBookings: (params?: { scheduleId?: string; memberId?: string; classDate?: string }) =>
+    api.get("/classes/bookings/all", { params }),
   book: (data: { scheduleId: string; memberId: string; classDate: string }) =>
-    api.post("/bookings", data),
+    api.post("/classes/bookings", data),
+  cancelBooking: (id: string, reason?: string) =>
+    api.post(`/classes/bookings/${id}/cancel`, { reason }),
+  markAttendance: (id: string, attended: boolean) =>
+    api.post(`/classes/bookings/${id}/attendance`, { attended }),
+};
+
+// Leads API
+export const leadsApi = {
+  getAll: (params?: { status?: string; source?: string; page?: number; limit?: number }) =>
+    api.get("/leads", { params }),
+  getById: (id: string) => api.get(`/leads/${id}`),
+  getStats: () => api.get("/leads/stats"),
+  getBySource: () => api.get("/leads/by-source"),
+  create: (data: {
+    firstName: string;
+    lastName?: string;
+    email?: string;
+    phone: string;
+    source?: string;
+    interestedIn?: string;
+    notes?: string;
+  }) => api.post("/leads", data),
+  update: (id: string, data: any) => api.patch(`/leads/${id}`, data),
+  delete: (id: string) => api.delete(`/leads/${id}`),
+  addActivity: (id: string, data: { type: string; description?: string; scheduledAt?: string }) =>
+    api.post(`/leads/${id}/activity`, data),
+  convert: (id: string, data?: { planId?: string; durationId?: string }) =>
+    api.post(`/leads/${id}/convert`, data),
+};
+
+// Trainers API
+export const trainersApi = {
+  getAll: (params?: { includeInactive?: boolean }) =>
+    api.get("/trainers", { params }),
+  getById: (id: string) => api.get(`/trainers/${id}`),
+  getStats: () => api.get("/trainers/stats"),
+  getSchedule: (id: string, params?: { startDate?: string; endDate?: string }) =>
+    api.get(`/trainers/${id}/schedule`, { params }),
+  create: (data: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    phone?: string;
+  }) => api.post("/trainers", data),
+  update: (id: string, data: any) => api.patch(`/trainers/${id}`, data),
+  delete: (id: string) => api.delete(`/trainers/${id}`),
 };
 
 // Attendance API

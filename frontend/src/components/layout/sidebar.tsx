@@ -89,15 +89,15 @@ export function Sidebar({ className }: SidebarProps) {
       </div>
 
       {/* Library Section */}
-      <div className="flex-1 rounded-lg bg-[#121212] flex flex-col overflow-hidden">
+      <div className="flex-1 rounded-lg bg-[#121212] flex flex-col min-h-0">
         {/* Library Header */}
-        <div className="flex items-center gap-3 p-4 text-[#b3b3b3] hover:text-white transition-colors cursor-pointer">
+        <div className="flex items-center gap-3 p-4 text-[#b3b3b3] hover:text-white transition-colors cursor-pointer shrink-0">
           <Library className="h-6 w-6" />
           <span className="text-base font-bold">Your Library</span>
         </div>
 
-        {/* Library Items */}
-        <ScrollArea className="flex-1 px-2">
+        {/* Library Items - Scrollable */}
+        <div className="flex-1 overflow-y-auto px-2 scrollbar-thin scrollbar-thumb-[#282828] scrollbar-track-transparent">
           <nav className="space-y-0.5 pb-4">
             {libraryItems.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -129,7 +129,7 @@ export function Sidebar({ className }: SidebarProps) {
               );
             })}
           </nav>
-        </ScrollArea>
+        </div>
 
         {/* Footer */}
         <div className="p-3 border-t border-[#282828]">

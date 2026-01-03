@@ -32,15 +32,16 @@ export default function DashboardLayout({
       {/* Main Content Area */}
       <div className="flex-1 lg:ml-[280px] flex flex-col min-h-screen p-2 pl-0 lg:pl-0">
         <div className="flex-1 rounded-lg bg-gradient-to-b from-[#1f1f1f] to-[#121212] overflow-hidden flex flex-col">
-          {/* Header with gradient background */}
-          <div className="spotify-gradient">
-            <Header onMenuClick={() => setMobileMenuOpen(true)} />
-          </div>
-          
-          {/* Scrollable Content */}
-          <ScrollArea className="flex-1">
+          {/* Scrollable Container */}
+          <div className="flex-1 overflow-y-auto">
+            {/* Sticky Header */}
+            <div className="sticky top-0 z-10 spotify-gradient backdrop-blur-md bg-[#1f1f1f]/80">
+              <Header onMenuClick={() => setMobileMenuOpen(true)} />
+            </div>
+            
+            {/* Main Content */}
             <main className="p-4 md:p-6">{children}</main>
-          </ScrollArea>
+          </div>
         </div>
       </div>
     </div>
