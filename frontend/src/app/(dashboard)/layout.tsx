@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { AuthGuard } from "@/components/auth-guard";
 
 export default function DashboardLayout({
   children,
@@ -14,6 +15,7 @@ export default function DashboardLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
+    <AuthGuard>
     <div className="flex min-h-screen bg-black">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
@@ -42,5 +44,6 @@ export default function DashboardLayout({
         </div>
       </div>
     </div>
+    </AuthGuard>
   );
 }

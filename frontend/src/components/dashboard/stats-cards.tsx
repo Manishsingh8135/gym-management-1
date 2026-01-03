@@ -1,48 +1,90 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Users, UserCheck, IndianRupee, AlertCircle, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { dashboardApi } from "@/lib/api";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const stats = [
-  {
-    title: "Total Members",
-    value: "1,284",
-    change: "+12%",
-    changeType: "positive" as const,
-    icon: Users,
-    description: "from last month",
-    color: "#1db954",
-  },
-  {
-    title: "Today's Check-ins",
-    value: "127",
-    change: "+8%",
-    changeType: "positive" as const,
-    icon: UserCheck,
-    description: "vs yesterday",
-    color: "#1ed760",
-  },
-  {
-    title: "Monthly Revenue",
-    value: "₹4,52,000",
-    change: "+23%",
-    changeType: "positive" as const,
-    icon: IndianRupee,
-    description: "from last month",
-    color: "#f59e0b",
-  },
-  {
-    title: "Expiring Soon",
-    value: "18",
-    change: "-5%",
-    changeType: "negative" as const,
-    icon: AlertCircle,
-    description: "next 7 days",
-    color: "#e91429",
-  },
-];
+interface DashboardStats {
+  totalMembers: number;
+  activeMembers: number;
+  todayCheckIns: number;
+  expiringThisWeek: number;
+  todayRevenue: number;
+  newMembersThisMonth: number;
+}
 
 export function StatsCards() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["dashboard-stats"],
+    queryFn: async () => {
+      const response = await dashboardApi.getStats();
+      return response.data.data as DashboardStats;
+    },
+  });
+
+  const stats = [
+    {
+      title: "Total Members",
+      value: data?.totalMembers?.toLocaleString() || "0",
+      change: `+${data?.newMembersThisMonth || 0} this month`,
+      changeType: "positive" as const,
+      icon: Users,
+      description: `${data?.activeMembers || 0} active`,
+      color: "#1db954",
+    },
+    {
+      title: "Today's Check-ins",
+      value: data?.todayCheckIns?.toString() || "0",
+      change: "Today",
+      changeType: "positive" as const,
+      icon: UserCheck,
+      description: "gym visits",
+      color: "#1ed760",
+    },
+    {
+      title: "Today's Revenue",
+      value: `₹${(data?.todayRevenue || 0).toLocaleString()}`,
+      change: "Collected today",
+      changeType: "positive" as const,
+      icon: IndianRupee,
+      description: "payments received",
+      color: "#f59e0b",
+    },
+    {
+      title: "Expiring Soon",
+      value: data?.expiringThisWeek?.toString() || "0",
+      change: "Action needed",
+      changeType: (data?.expiringThisWeek || 0) > 0 ? "negative" as const : "positive" as const,
+      icon: AlertCircle,
+      description: "next 7 days",
+      color: "#e91429",
+    },
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="rounded-lg bg-[#181818] p-5">
+            <Skeleton className="h-4 w-24 mb-2 bg-[#282828]" />
+            <Skeleton className="h-8 w-16 mb-4 bg-[#282828]" />
+            <Skeleton className="h-3 w-32 bg-[#282828]" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-lg bg-[#181818] p-5 text-center text-red-400">
+        Failed to load dashboard stats
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {stats.map((stat) => (

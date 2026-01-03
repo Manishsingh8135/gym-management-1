@@ -9,13 +9,21 @@ import { errorHandler } from './middlewares/error.middleware.js';
 
 const app: Express = express();
 
-// Security middleware
-app.use(helmet());
-
-// CORS
-app.use(cors({
-  origin: config.cors.origin,
+// CORS - MUST be before helmet and other middleware
+const corsOptions: cors.CorsOptions = {
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length', 'X-Request-Id'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+};
+app.use(cors(corsOptions));
+
+// Security middleware (after CORS)
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 
 // Body parsing

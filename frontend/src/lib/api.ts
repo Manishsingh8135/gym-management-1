@@ -91,20 +91,28 @@ export const dashboardApi = {
 
 // Plans API
 export const plansApi = {
-  getAll: () => api.get("/plans"),
+  getAll: (params?: { includeInactive?: boolean }) => api.get("/plans", { params }),
   getById: (id: string) => api.get(`/plans/${id}`),
   create: (data: any) => api.post("/plans", data),
   update: (id: string, data: any) => api.patch(`/plans/${id}`, data),
+  delete: (id: string) => api.delete(`/plans/${id}`),
 };
 
 // Memberships API
 export const membershipsApi = {
-  getAll: (params?: { memberId?: string; status?: string }) =>
+  getAll: (params?: { memberId?: string; status?: string; page?: number; limit?: number }) =>
     api.get("/memberships", { params }),
-  create: (data: any) => api.post("/memberships", data),
-  renew: (id: string, data: any) => api.post(`/memberships/${id}/renew`, data),
-  freeze: (id: string, data: any) => api.post(`/memberships/${id}/freeze`, data),
+  getById: (id: string) => api.get(`/memberships/${id}`),
+  create: (data: { memberId: string; planId: string; durationId: string; startDate?: string }) =>
+    api.post("/memberships", data),
+  renew: (id: string, data: { durationId: string; startFromCurrent?: boolean }) =>
+    api.post(`/memberships/${id}/renew`, data),
+  freeze: (id: string, data: { freezeDays: number; reason?: string }) =>
+    api.post(`/memberships/${id}/freeze`, data),
   unfreeze: (id: string) => api.post(`/memberships/${id}/unfreeze`),
+  cancel: (id: string) => api.post(`/memberships/${id}/cancel`),
+  upgrade: (id: string, data: { newPlanId: string; newDurationId: string }) =>
+    api.post(`/memberships/${id}/upgrade`, data),
 };
 
 // Payments API

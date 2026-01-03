@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -28,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Search,
   Plus,
@@ -40,114 +42,88 @@ import {
   Upload,
   Filter,
 } from "lucide-react";
+import { membersApi } from "@/lib/api";
+import { format } from "date-fns";
 
-const members = [
-  {
-    id: "1",
-    memberId: "GYM001",
-    name: "John Doe",
-    email: "john@example.com",
-    phone: "9876543210",
-    plan: "Premium",
-    status: "active",
-    expiryDate: "Mar 15, 2026",
-    joinDate: "Jan 15, 2024",
-    avatar: null,
-  },
-  {
-    id: "2",
-    memberId: "GYM002",
-    name: "Jane Smith",
-    email: "jane@example.com",
-    phone: "9876543211",
-    plan: "Basic",
-    status: "expiring",
-    expiryDate: "Jan 10, 2026",
-    joinDate: "Jul 10, 2024",
-    avatar: null,
-  },
-  {
-    id: "3",
-    memberId: "GYM003",
-    name: "Mike Johnson",
-    email: "mike@example.com",
-    phone: "9876543212",
-    plan: "VIP",
-    status: "expired",
-    expiryDate: "Dec 28, 2025",
-    joinDate: "Dec 28, 2023",
-    avatar: null,
-  },
-  {
-    id: "4",
-    memberId: "GYM004",
-    name: "Sarah Wilson",
-    email: "sarah@example.com",
-    phone: "9876543213",
-    plan: "Premium",
-    status: "frozen",
-    expiryDate: "Feb 20, 2026",
-    joinDate: "Aug 20, 2024",
-    avatar: null,
-  },
-  {
-    id: "5",
-    memberId: "GYM005",
-    name: "Alex Brown",
-    email: "alex@example.com",
-    phone: "9876543214",
-    plan: "Basic",
-    status: "active",
-    expiryDate: "Apr 05, 2026",
-    joinDate: "Oct 05, 2024",
-    avatar: null,
-  },
-];
+interface Member {
+  id: string;
+  memberId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  avatar?: string;
+  status: "ACTIVE" | "INACTIVE" | "FROZEN" | "EXPIRED" | "BLOCKED";
+  joinDate: string;
+  currentMembership?: {
+    plan: { name: string };
+    endDate: string;
+  } | null;
+}
+
+interface MembersResponse {
+  data: Member[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
 
 const statusConfig = {
-  active: { label: "Active", className: "bg-emerald-100 text-emerald-700" },
-  expiring: { label: "Expiring", className: "bg-amber-100 text-amber-700" },
-  expired: { label: "Expired", className: "bg-red-100 text-red-700" },
-  frozen: { label: "Frozen", className: "bg-blue-100 text-blue-700" },
+  ACTIVE: { label: "Active", className: "bg-emerald-500/20 text-emerald-400" },
+  INACTIVE: { label: "Inactive", className: "bg-gray-500/20 text-gray-400" },
+  EXPIRED: { label: "Expired", className: "bg-red-500/20 text-red-400" },
+  FROZEN: { label: "Frozen", className: "bg-blue-500/20 text-blue-400" },
+  BLOCKED: { label: "Blocked", className: "bg-red-500/20 text-red-400" },
 };
 
 export default function MembersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
 
-  const filteredMembers = members.filter((member) => {
-    const matchesSearch =
-      member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.memberId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.phone.includes(searchQuery);
-
-    const matchesStatus =
-      statusFilter === "all" || member.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["members", page, statusFilter, searchQuery],
+    queryFn: async () => {
+      const params: any = { page, limit: 20 };
+      if (statusFilter !== "all") params.status = statusFilter;
+      if (searchQuery) params.search = searchQuery;
+      const response = await membersApi.getAll(params);
+      return response.data as MembersResponse;
+    },
   });
+
+  const members = data?.data || [];
+  const meta = data?.meta;
+
+  // Calculate stats from the data
+  const totalMembers = meta?.total || 0;
+  const activeCount = members.filter(m => m.status === "ACTIVE").length;
+  const expiredCount = members.filter(m => m.status === "EXPIRED").length;
+  const frozenCount = members.filter(m => m.status === "FROZEN").length;
 
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Members</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold tracking-tight text-white">Members</h1>
+          <p className="text-[#b3b3b3]">
             Manage your gym members and their memberships
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="border-[#282828] bg-transparent text-white hover:bg-[#282828]">
             <Upload className="mr-2 h-4 w-4" />
             Import
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="border-[#282828] bg-transparent text-white hover:bg-[#282828]">
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button asChild>
+          <Button asChild className="bg-[#1db954] text-black hover:bg-[#1ed760]">
             <Link href="/members/new">
               <Plus className="mr-2 h-4 w-4" />
               Add Member
@@ -158,28 +134,28 @@ export default function MembersPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="bg-[#181818] border-none">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold">1,284</div>
-            <p className="text-sm text-muted-foreground">Total Members</p>
+            <div className="text-2xl font-bold text-white">{isLoading ? <Skeleton className="h-8 w-16 bg-[#282828]" /> : totalMembers}</div>
+            <p className="text-sm text-[#b3b3b3]">Total Members</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-[#181818] border-none">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-emerald-600">1,180</div>
-            <p className="text-sm text-muted-foreground">Active</p>
+            <div className="text-2xl font-bold text-emerald-400">{isLoading ? <Skeleton className="h-8 w-16 bg-[#282828]" /> : activeCount}</div>
+            <p className="text-sm text-[#b3b3b3]">Active</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-[#181818] border-none">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-amber-600">45</div>
-            <p className="text-sm text-muted-foreground">Expiring Soon</p>
+            <div className="text-2xl font-bold text-blue-400">{isLoading ? <Skeleton className="h-8 w-16 bg-[#282828]" /> : frozenCount}</div>
+            <p className="text-sm text-[#b3b3b3]">Frozen</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-[#181818] border-none">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-red-600">59</div>
-            <p className="text-sm text-muted-foreground">Expired</p>
+            <div className="text-2xl font-bold text-red-400">{isLoading ? <Skeleton className="h-8 w-16 bg-[#282828]" /> : expiredCount}</div>
+            <p className="text-sm text-[#b3b3b3]">Expired</p>
           </CardContent>
         </Card>
       </div>
@@ -213,92 +189,138 @@ export default function MembersPage() {
       </div>
 
       {/* Table */}
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Member</TableHead>
-              <TableHead>Plan</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Expiry Date</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredMembers.map((member) => (
-              <TableRow key={member.id}>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={member.avatar || ""} />
-                      <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                        {member.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{member.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {member.memberId}
-                      </p>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary">{member.plan}</Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    className={
-                      statusConfig[member.status as keyof typeof statusConfig]
-                        .className
-                    }
-                  >
-                    {
-                      statusConfig[member.status as keyof typeof statusConfig]
-                        .label
-                    }
-                  </Badge>
-                </TableCell>
-                <TableCell>{member.expiryDate}</TableCell>
-                <TableCell>{member.phone}</TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <Link href={`/members/${member.id}`}>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Profile
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <CreditCard className="mr-2 h-4 w-4" />
-                        Collect Payment
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
+      <Card className="bg-[#181818] border-none">
+        {isLoading ? (
+          <div className="p-8 space-y-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-center gap-4">
+                <Skeleton className="h-10 w-10 rounded-full bg-[#282828]" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-1/4 bg-[#282828]" />
+                  <Skeleton className="h-3 w-1/6 bg-[#282828]" />
+                </div>
+              </div>
             ))}
-          </TableBody>
-        </Table>
+          </div>
+        ) : members.length === 0 ? (
+          <div className="p-8 text-center text-[#b3b3b3]">
+            No members found. Add your first member to get started.
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow className="border-[#282828] hover:bg-transparent">
+                <TableHead className="text-[#b3b3b3]">Member</TableHead>
+                <TableHead className="text-[#b3b3b3]">Plan</TableHead>
+                <TableHead className="text-[#b3b3b3]">Status</TableHead>
+                <TableHead className="text-[#b3b3b3]">Expiry Date</TableHead>
+                <TableHead className="text-[#b3b3b3]">Phone</TableHead>
+                <TableHead className="text-right text-[#b3b3b3]">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {members.map((member) => {
+                const fullName = `${member.firstName} ${member.lastName}`;
+                const initials = `${member.firstName[0]}${member.lastName[0]}`;
+                const planName = member.currentMembership?.plan?.name || "No Plan";
+                const expiryDate = member.currentMembership?.endDate 
+                  ? format(new Date(member.currentMembership.endDate), "MMM dd, yyyy")
+                  : "-";
+                const statusInfo = statusConfig[member.status] || statusConfig.INACTIVE;
+
+                return (
+                  <TableRow key={member.id} className="border-[#282828] hover:bg-[#282828]">
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage src={member.avatar || ""} />
+                          <AvatarFallback className="bg-[#1db954]/20 text-[#1db954] text-sm">
+                            {initials}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-white">{fullName}</p>
+                          <p className="text-sm text-[#b3b3b3]">
+                            {member.memberId}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="bg-[#282828] text-white">{planName}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={statusInfo.className}>
+                        {statusInfo.label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-[#b3b3b3]">{expiryDate}</TableCell>
+                    <TableCell className="text-[#b3b3b3]">{member.phone}</TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="text-[#b3b3b3] hover:text-white hover:bg-[#282828]">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-[#282828] border-[#404040]">
+                          <DropdownMenuItem asChild className="text-white hover:bg-[#404040] cursor-pointer">
+                            <Link href={`/members/${member.id}`}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Profile
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-white hover:bg-[#404040] cursor-pointer">
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-white hover:bg-[#404040] cursor-pointer">
+                            <CreditCard className="mr-2 h-4 w-4" />
+                            Collect Payment
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-400 hover:bg-[#404040] cursor-pointer">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
       </Card>
+
+      {/* Pagination */}
+      {meta && meta.totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-[#b3b3b3]">
+            Showing {((meta.page - 1) * meta.limit) + 1} to {Math.min(meta.page * meta.limit, meta.total)} of {meta.total} members
+          </p>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              disabled={page === 1}
+              onClick={() => setPage(p => p - 1)}
+              className="border-[#282828] bg-transparent text-white hover:bg-[#282828]"
+            >
+              Previous
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              disabled={page >= meta.totalPages}
+              onClick={() => setPage(p => p + 1)}
+              className="border-[#282828] bg-transparent text-white hover:bg-[#282828]"
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

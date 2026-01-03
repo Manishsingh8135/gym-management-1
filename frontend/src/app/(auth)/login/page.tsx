@@ -4,9 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Dumbbell, Eye, EyeOff, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { authApi } from "@/lib/api";
+import { useAuthStore } from "@/stores/auth-store";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -17,23 +21,29 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.email || !formData.password) {
+      toast.error("Please enter email and password");
+      return;
+    }
+    
     setIsLoading(true);
     
-    // Demo login - accepts any credentials for now
-    // TODO: Replace with actual API call when backend is connected
-    setTimeout(() => {
-      // Store mock user data
-      localStorage.setItem("accessToken", "demo-token");
-      localStorage.setItem("user", JSON.stringify({
-        id: "1",
-        email: formData.email || "admin@gympro.com",
-        firstName: "Admin",
-        lastName: "User",
-        role: "ADMIN",
-      }));
-      setIsLoading(false);
+    try {
+      const response = await authApi.login(formData.email, formData.password);
+      const { user, accessToken, refreshToken } = response.data.data;
+      
+      // Store auth data using zustand store
+      login(user, accessToken, refreshToken);
+      
+      toast.success(`Welcome back, ${user.firstName}!`);
       router.push("/dashboard");
-    }, 1000);
+    } catch (error: any) {
+      const message = error.response?.data?.error?.message || "Invalid credentials";
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
